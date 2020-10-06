@@ -1,29 +1,30 @@
 #include "matrix.h"
 
 #include <iostream>
+#include <functional>
 #include <sys/time.h>
 #include <ctime>
 
 using namespace std;
 
-int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    cerr << "Expected exactly 1 parameter!" << endl;
-    return 1;
-  }
-  int n = stoi(argv[1]);
+struct timing_result {
+  double min, avg, max;
+};
 
-  int iterations = 5;
+std::ostream &operator<<(std::ostream &strm, const timing_result result) {
+  strm << "Min calc time in seconds = " << result.min << endl;
+  strm << "Avg calc time in seconds = " << result.avg << endl;
+  strm << "Max calc time in seconds = " << result.max << endl;
+  return strm;
+}
 
-  Matrix2D first = Matrix2D(n, n);
-  Matrix2D second = Matrix2D(n, n);
-
+timing_result measure_timing(const function<void(void)> &f, int iterations) {
   struct timeval start{}, end{};
   double r_time;
   double min_runtime = 1e20, max_runtime = 0, sum_runtime = 0;
   for (int i = 0; i < iterations; ++i) {
     gettimeofday(&start, nullptr);
-    Matrix2D result = first * second;
+    f();
     gettimeofday(&end, nullptr);
     r_time = (double) (end.tv_sec - start.tv_sec) + ((double) (end.tv_usec - start.tv_usec)) / 1000000;
     if (r_time < min_runtime) {
@@ -34,11 +35,30 @@ int main(int argc, char *argv[]) {
     }
     sum_runtime += r_time;
   }
+  return timing_result{min_runtime, sum_runtime / iterations, max_runtime};
+}
 
-  cout << "n = " << n << ", iterations = " << iterations << endl;
-  cout << "Min calc time in seconds = " << min_runtime << endl;
-  cout << "Avg calc time in seconds = " << (sum_runtime / iterations) << endl;
-  cout << "Max calc time in seconds = " << max_runtime << endl;
+void measure_multiplication_by_size(int n, int iterations) {
 
+  Matrix2D first = Matrix2D(n, n);
+  Matrix2D second = Matrix2D(n, n);
+
+  function<void(void)> custom_mult = [&first, &second]() { first * second; };
+  auto timing = measure_timing(custom_mult, iterations);
+  cout << "Custom implementation: " << endl << timing << endl;
+
+  function<void(void)> blas_mult = [&first, &second]() { first ^ second; };
+  timing = measure_timing(blas_mult, iterations);
+  cout << "CBLAS implementation: " << endl << timing << endl;
+}
+
+int main(int argc, char *argv[]) {
+  int iterations = 5;
+  int curr_dim = 512;
+  while (curr_dim < 5000) {
+    cout << "n = " << curr_dim << ", iterations = " << iterations << endl;
+    measure_multiplication_by_size(curr_dim, iterations);
+    curr_dim <<= 1;
+  }
   return 0;
 }

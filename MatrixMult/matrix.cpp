@@ -1,5 +1,6 @@
 #include <cstring>
 #include "matrix.h"
+#include <cblas.h>
 
 std::ostream &operator<<(std::ostream &strm, const Matrix2D &mat) {
   for (int i = 0; i < mat.n; ++i) {
@@ -30,6 +31,18 @@ Matrix2D Matrix2D::operator*(const Matrix2D &other) const {
       }
     }
   }
+  return Matrix2D(newN, newM, newMatrix);
+}
+Matrix2D Matrix2D::operator^(const Matrix2D &other) const {
+  if (m != other.n) {
+    throw logic_error("Matrices sizes don't match!");
+  }
+  int newN = n;
+  int newM = other.m;
+  auto *newMatrix = (double *) malloc(newN * newM * sizeof(double));
+  memset(newMatrix, 0, sizeof(*newMatrix));
+  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+              n, m, other.m, 1.0, matrix, m, other.matrix, other.m, 0.0, newMatrix, other.m);
   return Matrix2D(newN, newM, newMatrix);
 }
 double Matrix2D::get(int i, int j) const {

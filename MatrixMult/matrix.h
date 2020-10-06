@@ -18,4 +18,6 @@ class Matrix2D {
   virtual ~Matrix2D();
 
   Matrix2D operator*(const Matrix2D &other) const;
+
+  Matrix2D operator^(const Matrix2D &other) const;
 };
