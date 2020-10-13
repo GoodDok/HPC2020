@@ -49,7 +49,7 @@ size_t count_random_point_hits(size_t N) {
 }
 
 int main(int argc, char *argv[]) {
-  size_t N = 100000000;
+  size_t N = atoi(argv[1]);
   size_t hits = count_random_point_hits(N);
   printf("hits = %lu\n", hits);
   printf("approximated pi = %f\n", (double) hits * 4 / N);
